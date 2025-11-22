@@ -524,6 +524,20 @@ app.post("/api/adjustments", async (req, res) => {
   }
 });
 
+// GET Stock Moves (History)
+app.get("/api/moves", async (req, res) => {
+  try {
+    const moves = await StockMove.find()
+      .populate("product")
+      .populate("fromLocation")
+      .populate("toLocation")
+      .sort({ date: -1 });
+    res.json(moves);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Dashboard Stats
 app.get("/api/dashboard/stats", async (req, res) => {
   try {

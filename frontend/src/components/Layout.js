@@ -9,7 +9,8 @@ import {
   FaSignOutAlt, 
   FaTruck, 
   FaClipboardList,
-  FaCube
+  FaCube,
+  FaHistory
 } from 'react-icons/fa';
 import { motion } from 'framer-motion';
 
@@ -19,10 +20,12 @@ const Layout = ({ children }) => {
 
   const menuItems = [
     { path: '/dashboard', label: 'Dashboard', icon: <FaChartLine /> },
+    { path: '/products', label: 'Products', icon: <FaBox /> },
     { path: '/stock', label: 'Inventory', icon: <FaBox /> },
     { path: '/operations/receipts', label: 'Receipts', icon: <FaClipboardList /> },
     { path: '/operations/deliveries', label: 'Deliveries', icon: <FaTruck /> },
     { path: '/operations/transfers', label: 'Transfers', icon: <FaExchangeAlt /> },
+    { path: '/operations/moves', label: 'Stock Ledger', icon: <FaHistory /> },
     { path: '/settings/warehouse', label: 'Warehouses', icon: <FaWarehouse /> },
     { path: '/settings/location', label: 'Locations', icon: <FaCog /> },
   ];

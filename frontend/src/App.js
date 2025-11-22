@@ -10,6 +10,8 @@ import Dashboard from "./pages/Dashboard";
 
 // Stock
 import StockList from "./pages/Stock/StockList";
+import ProductList from "./pages/Stock/ProductList";
+import ProductForm from "./pages/Stock/ProductForm";
 
 // Settings
 import WarehouseList from "./pages/Settings/WarehouseList";
@@ -24,6 +26,7 @@ import DeliveryList from "./pages/Operations/DeliveryList";
 import DeliveryForm from "./pages/Operations/DeliveryForm";
 import TransferForm from "./pages/Operations/TransferForm";
 import AdjustmentForm from "./pages/Operations/AdjustmentForm";
+import MoveHistory from "./pages/Operations/MoveHistory";
 
 function App() {
   return (
@@ -42,8 +45,12 @@ function App() {
               
               {/* Stock Routes */}
               <Route path="/stock" element={<StockList />} />
+              <Route path="/products" element={<ProductList />} />
+              <Route path="/products/new" element={<ProductForm />} />
+              <Route path="/products/edit/:id" element={<ProductForm />} />
               <Route path="/operations/transfers/new" element={<TransferForm />} />
               <Route path="/operations/adjustments/new" element={<AdjustmentForm />} />
+              <Route path="/operations/moves" element={<MoveHistory />} />
 
               {/* Settings Routes */}
               <Route path="/settings/warehouse" element={<WarehouseList />} />
