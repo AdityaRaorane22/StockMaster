@@ -32,6 +32,7 @@ const Layout = ({ children }) => {
     {
       title: 'Operations',
       items: [
+        { path: '/operations/kanban', label: 'Kanban View', icon: <FaClipboardList />, roles: ['Inventory Manager'] },
         { path: '/operations/receipts', label: 'Receipt', icon: <FaClipboardList />, roles: ['Inventory Manager'] },
         { path: '/operations/deliveries', label: 'Delivery', icon: <FaTruck />, roles: ['Inventory Manager'] },
         { path: '/operations/adjustments/new', label: 'Adjustment', icon: <FaCog />, roles: ['Inventory Manager', 'Warehouse Staff'] },

@@ -30,6 +30,7 @@ import DeliveryForm from "./pages/Operations/DeliveryForm";
 import TransferForm from "./pages/Operations/TransferForm";
 import AdjustmentForm from "./pages/Operations/AdjustmentForm";
 import MoveHistory from "./pages/Operations/MoveHistory";
+import OperationsKanban from "./pages/Operations/OperationsKanban";
 
 function App() {
   return (
@@ -62,6 +63,9 @@ function App() {
               <Route path="/settings/location/new" element={<LocationForm />} />
               <Route path="/settings/location/edit/:id" element={<LocationForm />} />
               <Route path="/profile" element={<Profile />} />
+
+              {/* Operations - Kanban */}
+              <Route path="/operations/kanban" element={<OperationsKanban />} />
 
               {/* Operations - Receipts */}
               <Route path="/operations/receipts" element={<ReceiptList />} />

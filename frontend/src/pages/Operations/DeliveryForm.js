@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
-import { FaPrint, FaCheck, FaTimes, FaPlus, FaTrash, FaArrowRight } from "react-icons/fa";
+import { FaPrint, FaCheck, FaTimes, FaPlus, FaTrash, FaArrowRight, FaSync } from "react-icons/fa";
 
 const API = "http://localhost:5001/api";
 
@@ -66,6 +66,7 @@ function DeliveryForm() {
         }
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, isEdit]);
 
   const fetchStocks = async () => {
@@ -121,12 +122,59 @@ function DeliveryForm() {
 
   const handleToDo = async () => {
     try {
-      await axios.put(`${API}/deliveries/${id}`, { ...form, status: "Ready" });
-      setForm(prev => ({ ...prev, status: "Ready" }));
-      alert("Delivery moved to Ready!");
+      // Check if all products have sufficient stock
+      let hasInsufficientStock = false;
+      for (const item of form.products) {
+        const availableStock = getStockQuantity(item.product, form.from);
+        if (availableStock < item.quantity) {
+          hasInsufficientStock = true;
+          break;
+        }
+      }
+
+      const newStatus = hasInsufficientStock ? "Waiting" : "Ready";
+      await axios.put(`${API}/deliveries/${id}`, { ...form, status: newStatus });
+      setForm(prev => ({ ...prev, status: newStatus }));
+
+      if (hasInsufficientStock) {
+        alert("Delivery moved to Waiting due to insufficient stock!");
+      } else {
+        alert("Delivery moved to Ready!");
+      }
+
       fetchDelivery();
     } catch (err) {
       alert(err.response?.data?.error || "Failed to update status");
+    }
+  };
+
+  const handleRecheckStock = async () => {
+    try {
+      // Refresh stock data
+      await fetchStocks();
+
+      // Check if all products now have sufficient stock
+      let hasInsufficientStock = false;
+      for (const item of form.products) {
+        const availableStock = getStockQuantity(item.product, form.from);
+        if (availableStock < item.quantity) {
+          hasInsufficientStock = true;
+          break;
+        }
+      }
+
+      if (!hasInsufficientStock) {
+        // Stock is now sufficient, move to Ready
+        const newStatus = "Ready";
+        await axios.put(`${API}/deliveries/${id}`, { ...form, status: newStatus });
+        setForm(prev => ({ ...prev, status: newStatus }));
+        alert("Stock is now available! Delivery moved to Ready.");
+        fetchDelivery();
+      } else {
+        alert("Stock is still insufficient. Delivery remains in Waiting status.");
+      }
+    } catch (err) {
+      alert(err.response?.data?.error || "Failed to recheck stock");
     }
   };
 
@@ -188,6 +236,11 @@ function DeliveryForm() {
               <FaCheck /> Validate
             </button>
           )}
+          {isEdit && form.status === "Waiting" && (
+            <button className="btn btn-warning" onClick={handleRecheckStock} style={{ background: 'var(--warning)', color: 'white', border: 'none' }}>
+              <FaSync /> Recheck Stock
+            </button>
+          )}
           <button className="btn btn-outline" onClick={() => window.print()}>
             <FaPrint /> Print
           </button>
@@ -202,7 +255,6 @@ function DeliveryForm() {
       </div>
 
       <form onSubmit={handleSubmit}>
-
         <div className="card" style={{ marginBottom: '2rem' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
             <div>
@@ -255,10 +307,9 @@ function DeliveryForm() {
               <tbody>
                 {form.products.map((item, index) => {
                   const availableStock = getStockQuantity(item.product, form.from);
-                  const isInsufficient = form.from && item.product && item.quantity > availableStock;
 
                   return (
-                    <tr key={index} style={{ background: isInsufficient ? '#fee2e2' : 'transparent' }}>
+                    <tr key={index}>
                       <td>
                         <select
                           className="input"
@@ -272,9 +323,9 @@ function DeliveryForm() {
                             <option key={p._id} value={p._id}>{p.name} ({p.sku})</option>
                           ))}
                         </select>
-                        {isInsufficient && (
-                          <div style={{ fontSize: '0.75rem', color: 'var(--danger)', marginTop: '4px' }}>
-                            Available: {availableStock} (Insufficient)
+                        {form.from && item.product && (
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+                            Available: {availableStock}
                           </div>
                         )}
                       </td>
