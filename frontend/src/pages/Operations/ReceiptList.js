@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { FaSearch, FaPlus, FaEdit, FaTrash } from "react-icons/fa";
 
-const API = "http://localhost:5000/api";
+const API = "http://localhost:5001/api";
 
 function ReceiptList() {
   const [receipts, setReceipts] = useState([]);
@@ -34,59 +35,90 @@ function ReceiptList() {
     r.contact.toLowerCase().includes(search.toLowerCase())
   );
 
+  const getStatusBadge = (status) => {
+      switch(status) {
+          case 'Done': return 'badge-success';
+          case 'Ready': return 'badge-warning';
+          case 'Cancelled': return 'badge-danger';
+          default: return 'badge-neutral';
+      }
+  };
+
   return (
-    <div style={{ padding: "20px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <h2 style={{ color: "#c41e3a" }}>Receipts</h2>
+    <div>
+      <div className="header">
         <div>
-          <input
-            type="text"
-            placeholder="Search by reference & contacts"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            style={{ marginRight: "10px", padding: "5px" }}
-          />
-          <button onClick={() => navigate("/operations/receipts/new")}>+ New</button>
+            <h1>Receipts</h1>
+            <p style={{ color: 'var(--text-muted)' }}>Manage incoming stock from vendors.</p>
+        </div>
+        <button className="btn btn-primary" onClick={() => navigate("/operations/receipts/new")}>
+            <FaPlus /> New Receipt
+        </button>
+      </div>
+
+      <div className="card" style={{ marginBottom: '1.5rem', padding: '1rem' }}>
+        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+            <div style={{ position: 'relative', flex: 1 }}>
+                <FaSearch style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                <input 
+                    type="text" 
+                    className="input" 
+                    placeholder="Search by reference or contact..." 
+                    style={{ paddingLeft: '2.5rem' }}
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                />
+            </div>
         </div>
       </div>
 
-      <p style={{ fontSize: "12px", color: "#888" }}>
-        Allow user to search Receipts based on reference & contacts
-      </p>
-
-      <table border="1" cellPadding="10" style={{ width: "100%", marginTop: "20px" }}>
-        <thead>
-          <tr style={{ backgroundColor: "#f5f5f5" }}>
-            <th>Reference</th>
-            <th>From</th>
-            <th>To</th>
-            <th>Contact</th>
-            <th>Scheduled Date</th>
-            <th>Status</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {filteredReceipts.map((receipt) => (
-            <tr key={receipt._id}>
-              <td>{receipt.reference}</td>
-              <td>{receipt.from}</td>
-              <td>{receipt.to?.name || "WH/Stock"}</td>
-              <td>{receipt.contact}</td>
-              <td>{formatDate(receipt.scheduledDate)}</td>
-              <td>{receipt.status}</td>
-              <td>
-                <button onClick={() => navigate(`/operations/receipts/edit/${receipt._id}`)}>Edit</button>
-                <button onClick={() => handleDelete(receipt._id)}>Delete</button>
-              </td>
+      <div className="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Reference</th>
+              <th>From</th>
+              <th>To</th>
+              <th>Contact</th>
+              <th>Scheduled Date</th>
+              <th>Status</th>
+              <th style={{ textAlign: 'right' }}>Actions</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
-
-      <div style={{ marginTop: "20px" }}>
-        <p><strong>Populate all stock orders added to warehousing order</strong></p>
-        <p>Location of warehouse</p>
+          </thead>
+          <tbody>
+            {filteredReceipts.map((receipt) => (
+              <tr key={receipt._id}>
+                <td style={{ fontWeight: '500' }}>{receipt.reference}</td>
+                <td>{receipt.from}</td>
+                <td>{receipt.to?.name || "WH/Stock"}</td>
+                <td>{receipt.contact}</td>
+                <td>{formatDate(receipt.scheduledDate)}</td>
+                <td>
+                    <span className={`badge ${getStatusBadge(receipt.status)}`}>
+                        {receipt.status}
+                    </span>
+                </td>
+                <td style={{ textAlign: 'right' }}>
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                    <button className="btn btn-outline btn-sm" onClick={() => navigate(`/operations/receipts/edit/${receipt._id}`)}>
+                        <FaEdit />
+                    </button>
+                    <button className="btn btn-danger btn-sm" onClick={() => handleDelete(receipt._id)}>
+                        <FaTrash />
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+            {filteredReceipts.length === 0 && (
+                <tr>
+                    <td colSpan="7" style={{textAlign: 'center', padding: '3rem', color: 'var(--text-muted)'}}>
+                        No receipts found.
+                    </td>
+                </tr>
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   );

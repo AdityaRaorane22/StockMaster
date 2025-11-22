@@ -4,8 +4,17 @@ const cors = require("cors");
 require("dotenv").config();
 
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: "http://localhost:3000",
+  credentials: true
+}));
 app.use(express.json());
+
+const authRoutes = require("./routes/auth");
+app.use("/api/auth", authRoutes);
+
+const Stock = require("./models/Stock");
+const StockMove = require("./models/StockMove");
 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI)
@@ -138,64 +147,23 @@ app.delete("/api/locations/:id", async (req, res) => {
   }
 });
 
-// Stock Schema
-const stockSchema = new mongoose.Schema({
-  product: { type: String, required: true },
-  perUnitCost: { type: Number, required: true },
-  onHand: { type: Number, required: true, default: 0 },
-  freeToUse: { type: Number, required: true, default: 0 }
-}, { timestamps: true });
-
-const Stock = mongoose.model("Stock", stockSchema);
-
 // ============ STOCK ROUTES ============
 
-// GET all stock
+// GET all stock (aggregated)
 app.get("/api/stocks", async (req, res) => {
   try {
-    const stocks = await Stock.find();
+    const stocks = await Stock.find().populate("product").populate("location");
     res.json(stocks);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// GET single stock
+// GET single stock by ID
 app.get("/api/stocks/:id", async (req, res) => {
   try {
-    const stock = await Stock.findById(req.params.id);
+    const stock = await Stock.findById(req.params.id).populate("product").populate("location");
     res.json(stock);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// POST create stock
-app.post("/api/stocks", async (req, res) => {
-  try {
-    const stock = new Stock(req.body);
-    await stock.save();
-    res.status(201).json(stock);
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-});
-
-// PUT update stock
-app.put("/api/stocks/:id", async (req, res) => {
-  try {
-    const stock = await Stock.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    res.json(stock);
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-});
-
-// DELETE stock
-app.delete("/api/stocks/:id", async (req, res) => {
-  try {
-    await Stock.findByIdAndDelete(req.params.id);
-    res.json({ message: "Deleted" });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -404,6 +372,196 @@ app.delete("/api/deliveries/:id", async (req, res) => {
   try {
     await Delivery.findByIdAndDelete(req.params.id);
     res.json({ message: "Deleted" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ============ OPERATIONS ============
+
+// Validate Receipt
+app.post("/api/receipts/:id/validate", async (req, res) => {
+  try {
+    const receipt = await Receipt.findById(req.params.id).populate("products.product");
+    if (receipt.status === "Done") return res.status(400).json({ error: "Already validated" });
+
+    // Find default location for warehouse (first one found)
+    const location = await Location.findOne({ warehouse: receipt.to });
+    if (!location) return res.status(400).json({ error: "No location found for warehouse" });
+
+    for (const item of receipt.products) {
+      let stock = await Stock.findOne({ product: item.product._id, location: location._id });
+      if (!stock) {
+        stock = new Stock({ product: item.product._id, location: location._id, quantity: 0 });
+      }
+      stock.quantity += item.quantity;
+      await stock.save();
+
+      await StockMove.create({
+        product: item.product._id,
+        quantity: item.quantity,
+        type: "Receipt",
+        toLocation: location._id,
+        reference: receipt.reference,
+        date: new Date()
+      });
+    }
+
+    receipt.status = "Done";
+    await receipt.save();
+    res.json(receipt);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Validate Delivery
+app.post("/api/deliveries/:id/validate", async (req, res) => {
+  try {
+    const delivery = await Delivery.findById(req.params.id).populate("products.product");
+    if (delivery.status === "Done") return res.status(400).json({ error: "Already validated" });
+
+    // Find default location for warehouse
+    const location = await Location.findOne({ warehouse: delivery.from });
+    if (!location) return res.status(400).json({ error: "No location found for warehouse" });
+
+    for (const item of delivery.products) {
+      let stock = await Stock.findOne({ product: item.product._id, location: location._id });
+      if (!stock || stock.quantity < item.quantity) {
+        return res.status(400).json({ error: `Insufficient stock for ${item.product.name}` });
+      }
+      stock.quantity -= item.quantity;
+      await stock.save();
+
+      await StockMove.create({
+        product: item.product._id,
+        quantity: -item.quantity,
+        type: "Delivery",
+        fromLocation: location._id,
+        reference: delivery.reference,
+        date: new Date()
+      });
+    }
+
+    delivery.status = "Done";
+    await delivery.save();
+    res.json(delivery);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Internal Transfer
+app.post("/api/transfers", async (req, res) => {
+  const { product, fromLocation, toLocation, quantity } = req.body;
+  try {
+    // Check source stock
+    const sourceStock = await Stock.findOne({ product, location: fromLocation });
+    if (!sourceStock || sourceStock.quantity < quantity) {
+      return res.status(400).json({ error: "Insufficient stock at source location" });
+    }
+
+    // Deduct from source
+    sourceStock.quantity -= quantity;
+    await sourceStock.save();
+
+    // Add to dest
+    let destStock = await Stock.findOne({ product, location: toLocation });
+    if (!destStock) {
+      destStock = new Stock({ product, location: toLocation, quantity: 0 });
+    }
+    destStock.quantity += Number(quantity);
+    await destStock.save();
+
+    // Log Move
+    await StockMove.create({
+      product,
+      quantity,
+      type: "Internal",
+      fromLocation,
+      toLocation,
+      reference: "INT/" + Date.now(),
+      date: new Date()
+    });
+
+    res.json({ message: "Transfer successful" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Stock Adjustment
+app.post("/api/adjustments", async (req, res) => {
+  const { product, location, quantity, type } = req.body; // type: "Set" or "Add"
+  try {
+    let stock = await Stock.findOne({ product, location });
+    if (!stock) {
+      stock = new Stock({ product, location, quantity: 0 });
+    }
+
+    const oldQty = stock.quantity;
+    if (type === "Set") {
+      stock.quantity = quantity;
+    } else {
+      stock.quantity += Number(quantity);
+    }
+    await stock.save();
+
+    const diff = stock.quantity - oldQty;
+
+    await StockMove.create({
+      product,
+      quantity: diff,
+      type: "Adjustment",
+      toLocation: location,
+      reference: "ADJ/" + Date.now(),
+      date: new Date()
+    });
+
+    res.json(stock);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Dashboard Stats
+app.get("/api/dashboard/stats", async (req, res) => {
+  try {
+    const totalStockValue = await Stock.aggregate([
+      {
+        $lookup: {
+          from: "products",
+          localField: "product",
+          foreignField: "_id",
+          as: "productDetails"
+        }
+      },
+      { $unwind: "$productDetails" },
+      {
+        $group: {
+          _id: null,
+          totalValue: { $sum: { $multiply: ["$quantity", "$productDetails.perUnitCost"] } }
+        }
+      }
+    ]);
+
+    const lowStockCount = await Stock.countDocuments({ quantity: { $lt: 10 } });
+    const pendingReceipts = await Receipt.countDocuments({ status: { $ne: "Done" } });
+    const pendingDeliveries = await Delivery.countDocuments({ status: { $ne: "Done" } });
+
+    // Recent Activity (Last 5 Stock Moves)
+    const recentActivity = await StockMove.find()
+      .sort({ date: -1 })
+      .limit(5)
+      .populate("product");
+
+    res.json({
+      totalStockValue: totalStockValue[0]?.totalValue || 0,
+      lowStockCount,
+      pendingReceipts,
+      pendingDeliveries,
+      recentActivity
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
