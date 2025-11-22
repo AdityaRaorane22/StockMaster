@@ -212,11 +212,11 @@ git clone https://github.com/your-org/stockmaster.git
 cd stockmaster
 
 # Install frontend dependencies
-cd client
+cd frontend
 npm install
 
 # Install backend dependencies
-cd ../server
+cd ../backend
 npm install
 
 # Set up environment variables
