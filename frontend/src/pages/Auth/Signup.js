@@ -8,6 +8,7 @@ const Signup = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [role, setRole] = useState('Inventory Manager');
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -20,7 +21,7 @@ const Signup = () => {
     }
 
     try {
-      const { data } = await axios.post('http://localhost:5001/api/auth/register', { name, email, password });
+      const { data } = await axios.post('http://localhost:5001/api/auth/register', { name, email, password, role });
       localStorage.setItem('token', data.token);
       localStorage.setItem('userInfo', JSON.stringify(data));
       navigate('/dashboard');
@@ -87,6 +88,18 @@ const Signup = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 required
               />
+            </div>
+            <div style={{ marginBottom: '2rem' }}>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500' }}>Role</label>
+              <select
+                className="input"
+                value={role}
+                onChange={(e) => setRole(e.target.value)}
+                style={{ width: '100%' }}
+              >
+                <option value="Inventory Manager">Inventory Manager</option>
+                <option value="Warehouse Staff">Warehouse Staff</option>
+              </select>
             </div>
             <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '0.875rem' }}>Create Account</button>
           </form>

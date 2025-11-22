@@ -1,13 +1,13 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { 
-  FaBox, 
-  FaWarehouse, 
-  FaExchangeAlt, 
-  FaChartLine, 
-  FaCog, 
-  FaSignOutAlt, 
-  FaTruck, 
+import {
+  FaBox,
+  FaWarehouse,
+  FaExchangeAlt,
+  FaChartLine,
+  FaCog,
+  FaSignOutAlt,
+  FaTruck,
   FaClipboardList,
   FaCube,
   FaHistory
@@ -18,17 +18,23 @@ const Layout = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const menuItems = [
-    { path: '/dashboard', label: 'Dashboard', icon: <FaChartLine /> },
-    { path: '/products', label: 'Products', icon: <FaBox /> },
-    { path: '/stock', label: 'Inventory', icon: <FaBox /> },
-    { path: '/operations/receipts', label: 'Receipts', icon: <FaClipboardList /> },
-    { path: '/operations/deliveries', label: 'Deliveries', icon: <FaTruck /> },
-    { path: '/operations/transfers', label: 'Transfers', icon: <FaExchangeAlt /> },
-    { path: '/operations/moves', label: 'Stock Ledger', icon: <FaHistory /> },
-    { path: '/settings/warehouse', label: 'Warehouses', icon: <FaWarehouse /> },
-    { path: '/settings/location', label: 'Locations', icon: <FaCog /> },
+  const user = JSON.parse(localStorage.getItem('userInfo') || '{}');
+  const role = user.role || 'Inventory Manager';
+
+  const allMenuItems = [
+    { path: '/dashboard', label: 'Dashboard', icon: <FaChartLine />, roles: ['Inventory Manager'] },
+    { path: '/products', label: 'Products', icon: <FaBox />, roles: ['Inventory Manager'] },
+    { path: '/stock', label: 'Inventory', icon: <FaBox />, roles: ['Inventory Manager', 'Warehouse Staff'] },
+    { path: '/operations/receipts', label: 'Receipts', icon: <FaClipboardList />, roles: ['Inventory Manager'] },
+    { path: '/operations/deliveries', label: 'Deliveries', icon: <FaTruck />, roles: ['Inventory Manager'] },
+    { path: '/operations/transfers', label: 'Transfers', icon: <FaExchangeAlt />, roles: ['Inventory Manager', 'Warehouse Staff'] },
+    { path: '/operations/adjustments/new', label: 'Adjustments', icon: <FaCog />, roles: ['Inventory Manager', 'Warehouse Staff'] },
+    { path: '/operations/moves', label: 'Stock Ledger', icon: <FaHistory />, roles: ['Inventory Manager', 'Warehouse Staff'] },
+    { path: '/settings/warehouse', label: 'Warehouses', icon: <FaWarehouse />, roles: ['Inventory Manager'] },
+    { path: '/settings/location', label: 'Locations', icon: <FaCog />, roles: ['Inventory Manager'] },
   ];
+
+  const menuItems = allMenuItems.filter(item => item.roles.includes(role));
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -42,18 +48,18 @@ const Layout = ({ children }) => {
           <FaCube size={28} />
           <span>StockMaster</span>
         </div>
-        
+
         <div style={{ marginBottom: '2rem' }}>
-            <small style={{ 
-                textTransform: 'uppercase', 
-                color: 'var(--text-muted)', 
-                fontSize: '0.7rem', 
-                fontWeight: '600', 
-                letterSpacing: '0.1em',
-                paddingLeft: '1rem'
-            }}>
-                Main Menu
-            </small>
+          <small style={{
+            textTransform: 'uppercase',
+            color: 'var(--text-muted)',
+            fontSize: '0.7rem',
+            fontWeight: '600',
+            letterSpacing: '0.1em',
+            paddingLeft: '1rem'
+          }}>
+            Main Menu
+          </small>
         </div>
 
         <nav className="sidebar-nav" style={{ flex: 1 }}>
@@ -76,14 +82,14 @@ const Layout = ({ children }) => {
           </button>
         </div>
       </aside>
-      
+
       <main className="main-content">
         <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
         >
-            {children}
+          {children}
         </motion.div>
       </main>
     </div>
