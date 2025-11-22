@@ -403,7 +403,7 @@ app.post("/api/receipts/:id/validate", async (req, res) => {
         type: "Receipt",
         toLocation: location._id,
         reference: receipt.reference,
-        date: new Date()
+        date: receipt.scheduledDate || new Date()
       });
     }
 
@@ -439,7 +439,7 @@ app.post("/api/deliveries/:id/validate", async (req, res) => {
         type: "Delivery",
         fromLocation: location._id,
         reference: delivery.reference,
-        date: new Date()
+        date: delivery.scheduledDate || new Date()
       });
     }
 
@@ -578,7 +578,6 @@ app.get("/api/dashboard/stats", async (req, res) => {
       status: { $nin: ["Done", "Cancelled"] }
     });
     const lateOps = lateReceipts + lateDeliveries;
-
     const waitingReceipts = await Receipt.countDocuments({ status: "Waiting" });
     const waitingDeliveries = await Delivery.countDocuments({ status: "Waiting" });
     const waitingOps = waitingReceipts + waitingDeliveries;
@@ -589,6 +588,59 @@ app.get("/api/dashboard/stats", async (req, res) => {
       .limit(5)
       .populate("product");
 
+    // Chart Data - Year 2025 (Jan to Dec)
+    const year2025Start = new Date('2025-01-01');
+    const year2025End = new Date('2025-12-31T23:59:59.999Z'); // Ensure end of day for 2025-12-31
+
+    const monthlyData = await StockMove.aggregate([
+      {
+        $match: {
+          date: { $gte: year2025Start, $lte: year2025End }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            month: { $month: "$date" }
+          },
+          inbound: {
+            $sum: {
+              $cond: [{ $gt: ["$quantity", 0] }, "$quantity", 0]
+            }
+          },
+          outbound: {
+            $sum: {
+              $cond: [{ $lt: ["$quantity", 0] }, { $abs: "$quantity" }, 0]
+            }
+          }
+        }
+      },
+      {
+        $sort: { "_id.month": 1 }
+      }
+    ]);
+
+    // Create a map of month data
+    const monthDataMap = {};
+    monthlyData.forEach(item => {
+      monthDataMap[item._id.month] = {
+        inbound: item.inbound,
+        outbound: item.outbound
+      };
+    });
+
+    // Format chart data with all 12 months
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const chartData = monthNames.map((name, index) => {
+      const monthNum = index + 1;
+      const data = monthDataMap[monthNum] || { inbound: 0, outbound: 0 };
+      return {
+        name: name,
+        in: data.inbound,
+        out: data.outbound
+      };
+    });
+
     res.json({
       totalStockValue: totalStockValue[0]?.totalValue || 0,
       lowStockCount,
@@ -597,7 +649,8 @@ app.get("/api/dashboard/stats", async (req, res) => {
       totalProducts,
       lateOps,
       waitingOps,
-      recentActivity
+      recentActivity,
+      chartData
     });
   } catch (err) {
     res.status(500).json({ error: err.message });

@@ -3,16 +3,6 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { FaArrowUp, FaArrowDown, FaBoxOpen, FaExclamationTriangle } from 'react-icons/fa';
 import axios from 'axios';
 
-// Mock data for chart (can be replaced with real history later)
-const chartData = [
-    { name: 'Jan', in: 4000, out: 2400 },
-    { name: 'Feb', in: 3000, out: 1398 },
-    { name: 'Mar', in: 2000, out: 9800 },
-    { name: 'Apr', in: 2780, out: 3908 },
-    { name: 'May', in: 1890, out: 4800 },
-    { name: 'Jun', in: 2390, out: 3800 },
-];
-
 const StatCard = ({ title, value, subtext, icon, color }) => (
     <div className="card" style={{ position: 'relative', overflow: 'hidden' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
@@ -41,12 +31,14 @@ const Dashboard = () => {
         lowStockCount: 0,
         pendingReceipts: 0,
         pendingDeliveries: 0,
-        recentActivity: []
+        recentActivity: [],
+        chartData: []
     });
 
     useEffect(() => {
         fetchStats();
     }, []);
+
 
     const fetchStats = async () => {
         try {
@@ -117,26 +109,32 @@ const Dashboard = () => {
 
             <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1.5rem' }}>
                 <div className="card" style={{ height: '400px' }}>
-                    <h3 style={{ marginBottom: '1.5rem' }}>Stock Movement</h3>
-                    <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={chartData}>
-                            <defs>
-                                <linearGradient id="colorIn" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.3} />
-                                    <stop offset="95%" stopColor="var(--primary)" stopOpacity={0} />
-                                </linearGradient>
-                            </defs>
-                            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-                            <XAxis dataKey="name" stroke="var(--text-muted)" />
-                            <YAxis stroke="var(--text-muted)" />
-                            <Tooltip
-                                contentStyle={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '8px' }}
-                                itemStyle={{ color: 'var(--text-main)' }}
-                            />
-                            <Area type="monotone" dataKey="in" stroke="var(--primary)" fillOpacity={1} fill="url(#colorIn)" />
-                            <Area type="monotone" dataKey="out" stroke="var(--secondary)" fillOpacity={0.3} fill="var(--secondary)" />
-                        </AreaChart>
-                    </ResponsiveContainer>
+                    <h3 style={{ marginBottom: '1.5rem' }}>Stock Movement 2025</h3>
+                    {stats.chartData && stats.chartData.length > 0 ? (
+                        <ResponsiveContainer width="100%" height="100%">
+                            <AreaChart data={stats.chartData}>
+                                <defs>
+                                    <linearGradient id="colorIn" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.3} />
+                                        <stop offset="95%" stopColor="var(--primary)" stopOpacity={0} />
+                                    </linearGradient>
+                                </defs>
+                                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                                <XAxis dataKey="name" stroke="var(--text-muted)" />
+                                <YAxis stroke="var(--text-muted)" />
+                                <Tooltip
+                                    contentStyle={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '8px' }}
+                                    itemStyle={{ color: 'var(--text-main)' }}
+                                />
+                                <Area type="monotone" dataKey="in" stroke="var(--primary)" fillOpacity={1} fill="url(#colorIn)" name="Inbound" />
+                                <Area type="monotone" dataKey="out" stroke="var(--secondary)" fillOpacity={0.3} fill="var(--secondary)" name="Outbound" />
+                            </AreaChart>
+                        </ResponsiveContainer>
+                    ) : (
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-muted)' }}>
+                            No stock movement data available
+                        </div>
+                    )}
                 </div>
 
                 <div className="card">
