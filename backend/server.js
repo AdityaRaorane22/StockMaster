@@ -563,6 +563,26 @@ app.get("/api/dashboard/stats", async (req, res) => {
     const pendingReceipts = await Receipt.countDocuments({ status: { $ne: "Done" } });
     const pendingDeliveries = await Delivery.countDocuments({ status: { $ne: "Done" } });
 
+    // New KPIs
+    const totalProducts = await Product.countDocuments();
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const lateReceipts = await Receipt.countDocuments({
+      scheduledDate: { $lt: today },
+      status: { $nin: ["Done", "Cancelled"] }
+    });
+    const lateDeliveries = await Delivery.countDocuments({
+      scheduledDate: { $lt: today },
+      status: { $nin: ["Done", "Cancelled"] }
+    });
+    const lateOps = lateReceipts + lateDeliveries;
+
+    const waitingReceipts = await Receipt.countDocuments({ status: "Waiting" });
+    const waitingDeliveries = await Delivery.countDocuments({ status: "Waiting" });
+    const waitingOps = waitingReceipts + waitingDeliveries;
+
     // Recent Activity (Last 5 Stock Moves)
     const recentActivity = await StockMove.find()
       .sort({ date: -1 })
@@ -574,6 +594,9 @@ app.get("/api/dashboard/stats", async (req, res) => {
       lowStockCount,
       pendingReceipts,
       pendingDeliveries,
+      totalProducts,
+      lateOps,
+      waitingOps,
       recentActivity
     });
   } catch (err) {
