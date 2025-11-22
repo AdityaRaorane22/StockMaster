@@ -52,26 +52,26 @@ function ProductForm() {
             <label style={{ display: 'block', marginBottom: '0.5rem' }}>Product Name</label>
             <input type="text" name="name" className="input" value={form.name} onChange={handleChange} required />
           </div>
-          
+
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
             <div style={{ marginBottom: '1rem' }}>
-                <label style={{ display: 'block', marginBottom: '0.5rem' }}>SKU / Code</label>
-                <input type="text" name="sku" className="input" value={form.sku} onChange={handleChange} required />
+              <label style={{ display: 'block', marginBottom: '0.5rem' }}>SKU / Code</label>
+              <input type="text" name="sku" className="input" value={form.sku} onChange={handleChange} required />
             </div>
             <div style={{ marginBottom: '1rem' }}>
-                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Category</label>
-                <input type="text" name="category" className="input" placeholder="e.g. Electronics" value={form.category} onChange={handleChange} required />
+              <label style={{ display: 'block', marginBottom: '0.5rem' }}>Category</label>
+              <input type="text" name="category" className="input" placeholder="e.g. Electronics" value={form.category} onChange={handleChange} required />
             </div>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
             <div style={{ marginBottom: '1rem' }}>
-                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Unit of Measure</label>
-                <input type="text" name="unitOfMeasure" className="input" placeholder="e.g. pcs, kg, box" value={form.unitOfMeasure} onChange={handleChange} required />
+              <label style={{ display: 'block', marginBottom: '0.5rem' }}>Unit of Measure</label>
+              <input type="text" name="unitOfMeasure" className="input" placeholder="e.g. pcs, kg, box" value={form.unitOfMeasure} onChange={handleChange} required />
             </div>
             <div style={{ marginBottom: '1rem' }}>
-                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Cost per Unit ($)</label>
-                <input type="number" name="perUnitCost" className="input" value={form.perUnitCost} onChange={handleChange} required />
+              <label style={{ display: 'block', marginBottom: '0.5rem' }}>Cost per Unit (₹)</label>
+              <input type="number" name="perUnitCost" className="input" value={form.perUnitCost} onChange={handleChange} required />
             </div>
           </div>
 
