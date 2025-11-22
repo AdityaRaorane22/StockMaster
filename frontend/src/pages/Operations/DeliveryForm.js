@@ -22,33 +22,40 @@ function DeliveryForm() {
 
   const [warehouses, setWarehouses] = useState([]);
   const [products, setProducts] = useState([]);
-  const [stocks, setStocks] = useState([]); // Store stock levels
+  const [stocks, setStocks] = useState([]);
   const [reference, setReference] = useState("");
+
+  const fetchDelivery = async () => {
+    if (!id) return;
+    try {
+      const res = await axios.get(`${API}/deliveries/${id}`);
+      const data = res.data;
+      setReference(data.reference);
+      setForm({
+        contact: data.contact,
+        scheduledDate: data.scheduledDate?.split("T")[0] || "",
+        deliveryAddress: data.deliveryAddress || "",
+        responsiblePerson: data.responsiblePerson || "",
+        from: data.from?._id || "",
+        status: data.status,
+        products: data.products.map(p => ({
+          product: p.product?._id || "",
+          quantity: p.quantity
+        }))
+      });
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   useEffect(() => {
     axios.get(`${API}/warehouses`).then(res => setWarehouses(res.data));
     axios.get(`${API}/products`).then(res => setProducts(res.data));
-    fetchStocks(); // Fetch all stocks
+    fetchStocks();
 
     if (isEdit) {
-      axios.get(`${API}/deliveries/${id}`).then(res => {
-        const data = res.data;
-        setReference(data.reference);
-        setForm({
-          contact: data.contact,
-          scheduledDate: data.scheduledDate?.split("T")[0] || "",
-          deliveryAddress: data.deliveryAddress || "",
-          responsiblePerson: data.responsiblePerson || "",
-          from: data.from?._id || "",
-          status: data.status,
-          products: data.products.map(p => ({
-            product: p.product?._id || "",
-            quantity: p.quantity
-          }))
-        });
-      });
+      fetchDelivery();
     } else {
-      // Auto-fill responsible person for new deliveries
       const userInfo = localStorage.getItem("userInfo");
       if (userInfo) {
         try {
@@ -72,7 +79,6 @@ function DeliveryForm() {
 
   const getStockQuantity = (productId, warehouseId) => {
     if (!productId || !warehouseId) return 0;
-    // Find stock for this product in the selected warehouse's locations
     const relevantStock = stocks.find(s =>
       s.product?._id === productId &&
       (s.location?.warehouse?._id === warehouseId || s.location?.warehouse === warehouseId)
@@ -113,15 +119,26 @@ function DeliveryForm() {
     }
   };
 
+  const handleToDo = async () => {
+    try {
+      await axios.put(`${API}/deliveries/${id}`, { ...form, status: "Ready" });
+      setForm(prev => ({ ...prev, status: "Ready" }));
+      alert("Delivery moved to Ready!");
+      fetchDelivery();
+    } catch (err) {
+      alert(err.response?.data?.error || "Failed to update status");
+    }
+  };
+
   const handleValidate = async () => {
     try {
       const res = await axios.post(`${API}/deliveries/${id}/validate`);
-      // Refresh data
       setForm({ ...form, status: res.data.status });
       if (res.data.status === "Waiting") {
-        alert("Warning: Stock unavailable. Delivery set to 'Waiting' status.");
+        alert("Delivery is waiting for stock availability");
       } else {
         alert("Delivery Validated Successfully!");
+        navigate("/operations/deliveries");
       }
     } catch (err) {
       alert(err.response?.data?.error || "Validation failed");
@@ -161,7 +178,12 @@ function DeliveryForm() {
           <p style={{ color: 'var(--text-muted)' }}>Outgoing shipment to customer.</p>
         </div>
         <div style={{ display: 'flex', gap: '1rem' }}>
-          {isEdit && form.status !== "Done" && (
+          {isEdit && form.status === "Draft" && (
+            <button className="btn btn-primary" onClick={handleToDo}>
+              <FaCheck /> To DO
+            </button>
+          )}
+          {isEdit && form.status === "Ready" && (
             <button className="btn btn-primary" onClick={handleValidate}>
               <FaCheck /> Validate
             </button>
@@ -180,6 +202,7 @@ function DeliveryForm() {
       </div>
 
       <form onSubmit={handleSubmit}>
+
         <div className="card" style={{ marginBottom: '2rem' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
             <div>

@@ -68,7 +68,6 @@ const Dashboard = () => {
                     <h1>Dashboard</h1>
                     <p style={{ color: 'var(--text-muted)' }}>Overview of your inventory performance.</p>
                 </div>
-                <button className="btn btn-primary">+ Quick Action</button>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>

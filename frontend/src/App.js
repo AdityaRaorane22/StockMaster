@@ -19,7 +19,6 @@ import ProductForm from "./pages/Stock/ProductForm";
 import WarehouseList from "./pages/Settings/WarehouseList";
 import WarehouseForm from "./pages/Settings/WarehouseForm";
 import LocationList from "./pages/Settings/LocationList";
-
 import LocationForm from "./pages/Settings/LocationForm";
 import Profile from "./pages/Settings/Profile";
 
@@ -54,9 +53,6 @@ function App() {
               <Route path="/products" element={<ProductList />} />
               <Route path="/products/new" element={<ProductForm />} />
               <Route path="/products/edit/:id" element={<ProductForm />} />
-              <Route path="/operations/transfers/new" element={<TransferForm />} />
-              <Route path="/operations/adjustments/new" element={<AdjustmentForm />} />
-              <Route path="/operations/moves" element={<MoveHistory />} />
 
               {/* Settings Routes */}
               <Route path="/settings/warehouse" element={<WarehouseList />} />
@@ -64,7 +60,6 @@ function App() {
               <Route path="/settings/warehouse/edit/:id" element={<WarehouseForm />} />
               <Route path="/settings/location" element={<LocationList />} />
               <Route path="/settings/location/new" element={<LocationForm />} />
-
               <Route path="/settings/location/edit/:id" element={<LocationForm />} />
               <Route path="/profile" element={<Profile />} />
 
@@ -77,6 +72,13 @@ function App() {
               <Route path="/operations/deliveries" element={<DeliveryList />} />
               <Route path="/operations/deliveries/new" element={<DeliveryForm />} />
               <Route path="/operations/deliveries/edit/:id" element={<DeliveryForm />} />
+
+              {/* Operations - Transfers */}
+              <Route path="/operations/transfers/new" element={<TransferForm />} />
+
+              {/* Operations - Other */}
+              <Route path="/operations/adjustments/new" element={<AdjustmentForm />} />
+              <Route path="/operations/moves" element={<MoveHistory />} />
             </Routes>
           </Layout>
         } />

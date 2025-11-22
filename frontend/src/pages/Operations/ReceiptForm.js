@@ -24,27 +24,35 @@ function ReceiptForm() {
   const [products, setProducts] = useState([]);
   const [reference, setReference] = useState("");
 
+  const fetchReceipt = async () => {
+    if (!id) return;
+    try {
+      const res = await axios.get(`${API}/receipts/${id}`);
+      const data = res.data;
+      setReference(data.reference);
+      setForm({
+        contact: data.contact,
+        scheduledDate: data.scheduledDate?.split("T")[0] || "",
+        sourceDoc: data.sourceDoc || "",
+        responsiblePerson: data.responsiblePerson || "",
+        to: data.to?._id || "",
+        status: data.status,
+        products: data.products.map(p => ({
+          product: p.product?._id || "",
+          quantity: p.quantity
+        }))
+      });
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   useEffect(() => {
     axios.get(`${API}/warehouses`).then(res => setWarehouses(res.data));
     axios.get(`${API}/products`).then(res => setProducts(res.data));
 
     if (isEdit) {
-      axios.get(`${API}/receipts/${id}`).then(res => {
-        const data = res.data;
-        setReference(data.reference);
-        setForm({
-          contact: data.contact,
-          scheduledDate: data.scheduledDate?.split("T")[0] || "",
-          sourceDoc: data.sourceDoc || "",
-          responsiblePerson: data.responsiblePerson || "",
-          to: data.to?._id || "",
-          status: data.status,
-          products: data.products.map(p => ({
-            product: p.product?._id || "",
-            quantity: p.quantity
-          }))
-        });
-      });
+      fetchReceipt();
     } else {
       // Auto-fill responsible person for new receipts
       const userInfo = localStorage.getItem("userInfo");
@@ -92,13 +100,24 @@ function ReceiptForm() {
     }
   };
 
+  const handleToDo = async () => {
+    try {
+      await axios.put(`${API}/receipts/${id}`, { ...form, status: "Ready" });
+      setForm(prev => ({ ...prev, status: "Ready" }));
+      alert("Receipt moved to Ready!");
+      fetchReceipt();
+    } catch (err) {
+      alert(err.response?.data?.error || "Failed to update status");
+    }
+  };
+
   const handleValidate = async () => {
     try {
       await axios.post(`${API}/receipts/${id}/validate`);
-      // Refresh data
-      const res = await axios.get(`${API}/receipts/${id}`);
-      setForm({ ...form, status: res.data.status });
+      setForm(prev => ({ ...prev, status: "Done" }));
+      fetchReceipt();
       alert("Receipt Validated Successfully!");
+      navigate("/operations/receipts");
     } catch (err) {
       alert(err.response?.data?.error || "Validation failed");
     }
@@ -137,7 +156,12 @@ function ReceiptForm() {
           <p style={{ color: 'var(--text-muted)' }}>Incoming shipment from vendor.</p>
         </div>
         <div style={{ display: 'flex', gap: '1rem' }}>
-          {isEdit && form.status !== "Done" && (
+          {isEdit && form.status === "Draft" && (
+            <button className="btn btn-primary" onClick={handleToDo}>
+              <FaCheck /> To DO
+            </button>
+          )}
+          {isEdit && form.status === "Ready" && (
             <button className="btn btn-primary" onClick={handleValidate}>
               <FaCheck /> Validate
             </button>
