@@ -45,6 +45,17 @@ function ReceiptForm() {
           }))
         });
       });
+    } else {
+      // Auto-fill responsible person for new receipts
+      const userInfo = localStorage.getItem("userInfo");
+      if (userInfo) {
+        try {
+          const user = JSON.parse(userInfo);
+          setForm(prev => ({ ...prev, responsiblePerson: user.name }));
+        } catch (e) {
+          console.error("Error parsing user info", e);
+        }
+      }
     }
   }, [id, isEdit]);
 
@@ -97,24 +108,24 @@ function ReceiptForm() {
     const steps = ["Draft", "Waiting", "Ready", "Done"];
     const currentIndex = steps.indexOf(status);
     return (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            {steps.map((step, index) => (
-                <React.Fragment key={step}>
-                    <div style={{ 
-                        padding: '0.25rem 0.75rem', 
-                        borderRadius: '999px', 
-                        fontSize: '0.75rem', 
-                        fontWeight: '600',
-                        background: index <= currentIndex ? 'var(--primary)' : 'var(--bg-surface)',
-                        color: index <= currentIndex ? 'white' : 'var(--text-muted)',
-                        border: index <= currentIndex ? 'none' : '1px solid var(--border)'
-                    }}>
-                        {step}
-                    </div>
-                    {index < steps.length - 1 && <FaArrowRight size={10} color="var(--text-muted)" />}
-                </React.Fragment>
-            ))}
-        </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        {steps.map((step, index) => (
+          <React.Fragment key={step}>
+            <div style={{
+              padding: '0.25rem 0.75rem',
+              borderRadius: '999px',
+              fontSize: '0.75rem',
+              fontWeight: '600',
+              background: index <= currentIndex ? 'var(--primary)' : 'var(--bg-surface)',
+              color: index <= currentIndex ? 'white' : 'var(--text-muted)',
+              border: index <= currentIndex ? 'none' : '1px solid var(--border)'
+            }}>
+              {step}
+            </div>
+            {index < steps.length - 1 && <FaArrowRight size={10} color="var(--text-muted)" />}
+          </React.Fragment>
+        ))}
+      </div>
     );
   };
 
@@ -122,21 +133,21 @@ function ReceiptForm() {
     <div>
       <div className="header">
         <div>
-            <h1>{isEdit ? reference : "New Receipt"}</h1>
-            <p style={{ color: 'var(--text-muted)' }}>Incoming shipment from vendor.</p>
+          <h1>{isEdit ? reference : "New Receipt"}</h1>
+          <p style={{ color: 'var(--text-muted)' }}>Incoming shipment from vendor.</p>
         </div>
         <div style={{ display: 'flex', gap: '1rem' }}>
-            {isEdit && form.status !== "Done" && (
-                <button className="btn btn-primary" onClick={handleValidate}>
-                    <FaCheck /> Validate
-                </button>
-            )}
-            <button className="btn btn-outline" onClick={() => window.print()}>
-                <FaPrint /> Print
+          {isEdit && form.status !== "Done" && (
+            <button className="btn btn-primary" onClick={handleValidate}>
+              <FaCheck /> Validate
             </button>
-            <button className="btn btn-outline" onClick={() => navigate("/operations/receipts")}>
-                <FaTimes /> Cancel
-            </button>
+          )}
+          <button className="btn btn-outline" onClick={() => window.print()}>
+            <FaPrint /> Print
+          </button>
+          <button className="btn btn-outline" onClick={() => navigate("/operations/receipts")}>
+            <FaTimes /> Cancel
+          </button>
         </div>
       </div>
 
@@ -146,105 +157,105 @@ function ReceiptForm() {
 
       <form onSubmit={handleSubmit}>
         <div className="card" style={{ marginBottom: '2rem' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
-                <div>
-                    <div style={{ marginBottom: '1rem' }}>
-                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500' }}>Receive From</label>
-                        <input type="text" className="input" value="Vendor" disabled style={{ background: 'var(--bg-surface)' }} />
-                    </div>
-                    <div style={{ marginBottom: '1rem' }}>
-                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500' }}>Contact (Vendor)</label>
-                        <input type="text" name="contact" className="input" value={form.contact} onChange={handleChange} required placeholder="e.g. IKEA Supply Co." />
-                    </div>
-                    <div style={{ marginBottom: '1rem' }}>
-                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500' }}>Destination Warehouse</label>
-                        <select name="to" className="input" value={form.to} onChange={handleChange} required>
-                            <option value="">Select Warehouse</option>
-                            {warehouses.map(wh => (
-                                <option key={wh._id} value={wh._id}>{wh.name}</option>
-                            ))}
-                        </select>
-                    </div>
-                </div>
-                <div>
-                    <div style={{ marginBottom: '1rem' }}>
-                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500' }}>Scheduled Date</label>
-                        <input type="date" name="scheduledDate" className="input" value={form.scheduledDate} onChange={handleChange} required />
-                    </div>
-                    <div style={{ marginBottom: '1rem' }}>
-                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500' }}>Source Document</label>
-                        <input type="text" name="sourceDoc" className="input" value={form.sourceDoc} onChange={handleChange} placeholder="e.g. PO001" />
-                    </div>
-                    <div style={{ marginBottom: '1rem' }}>
-                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500' }}>Responsible Person</label>
-                        <input type="text" name="responsiblePerson" className="input" value={form.responsiblePerson} onChange={handleChange} />
-                    </div>
-                </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
+            <div>
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500' }}>Receive From</label>
+                <input type="text" className="input" value="Vendor" disabled style={{ background: 'var(--bg-surface)' }} />
+              </div>
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500' }}>Contact (Vendor)</label>
+                <input type="text" name="contact" className="input" value={form.contact} onChange={handleChange} required placeholder="e.g. IKEA Supply Co." />
+              </div>
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500' }}>Destination Warehouse</label>
+                <select name="to" className="input" value={form.to} onChange={handleChange} required>
+                  <option value="">Select Warehouse</option>
+                  {warehouses.map(wh => (
+                    <option key={wh._id} value={wh._id}>{wh.name}</option>
+                  ))}
+                </select>
+              </div>
             </div>
+            <div>
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500' }}>Scheduled Date</label>
+                <input type="date" name="scheduledDate" className="input" value={form.scheduledDate} onChange={handleChange} required />
+              </div>
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500' }}>Source Document</label>
+                <input type="text" name="sourceDoc" className="input" value={form.sourceDoc} onChange={handleChange} placeholder="e.g. PO001" />
+              </div>
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500' }}>Responsible Person</label>
+                <input type="text" name="responsiblePerson" className="input" value={form.responsiblePerson} onChange={handleChange} />
+              </div>
+            </div>
+          </div>
         </div>
 
         <div className="card">
-            <h3 style={{ marginBottom: '1rem' }}>Products</h3>
-            <div className="table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Product</th>
-                            <th style={{ width: '150px' }}>Quantity</th>
-                            <th style={{ width: '100px', textAlign: 'right' }}>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {form.products.map((item, index) => (
-                            <tr key={index}>
-                                <td>
-                                    <select 
-                                        className="input" 
-                                        value={item.product} 
-                                        onChange={(e) => handleProductChange(index, "product", e.target.value)} 
-                                        required
-                                        disabled={form.status === "Done"}
-                                    >
-                                        <option value="">Select Product</option>
-                                        {products.map(p => (
-                                            <option key={p._id} value={p._id}>{p.name} ({p.sku})</option>
-                                        ))}
-                                    </select>
-                                </td>
-                                <td>
-                                    <input 
-                                        type="number" 
-                                        className="input" 
-                                        value={item.quantity} 
-                                        onChange={(e) => handleProductChange(index, "quantity", e.target.value)} 
-                                        required 
-                                        min="1"
-                                        disabled={form.status === "Done"}
-                                    />
-                                </td>
-                                <td style={{ textAlign: 'right' }}>
-                                    {form.status !== "Done" && (
-                                        <button type="button" className="btn btn-danger btn-sm" onClick={() => removeProduct(index)}>
-                                            <FaTrash />
-                                        </button>
-                                    )}
-                                </td>
-                            </tr>
+          <h3 style={{ marginBottom: '1rem' }}>Products</h3>
+          <div className="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Product</th>
+                  <th style={{ width: '150px' }}>Quantity</th>
+                  <th style={{ width: '100px', textAlign: 'right' }}>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {form.products.map((item, index) => (
+                  <tr key={index}>
+                    <td>
+                      <select
+                        className="input"
+                        value={item.product}
+                        onChange={(e) => handleProductChange(index, "product", e.target.value)}
+                        required
+                        disabled={form.status === "Done"}
+                      >
+                        <option value="">Select Product</option>
+                        {products.map(p => (
+                          <option key={p._id} value={p._id}>{p.name} ({p.sku})</option>
                         ))}
-                    </tbody>
-                </table>
-            </div>
-            {form.status !== "Done" && (
-                <button type="button" className="btn btn-outline" onClick={addProduct} style={{ marginTop: '1rem' }}>
-                    <FaPlus /> Add Product
-                </button>
-            )}
+                      </select>
+                    </td>
+                    <td>
+                      <input
+                        type="number"
+                        className="input"
+                        value={item.quantity}
+                        onChange={(e) => handleProductChange(index, "quantity", e.target.value)}
+                        required
+                        min="1"
+                        disabled={form.status === "Done"}
+                      />
+                    </td>
+                    <td style={{ textAlign: 'right' }}>
+                      {form.status !== "Done" && (
+                        <button type="button" className="btn btn-danger btn-sm" onClick={() => removeProduct(index)}>
+                          <FaTrash />
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {form.status !== "Done" && (
+            <button type="button" className="btn btn-outline" onClick={addProduct} style={{ marginTop: '1rem' }}>
+              <FaPlus /> Add Product
+            </button>
+          )}
         </div>
 
         <div style={{ marginTop: '2rem', display: 'flex', gap: '1rem' }}>
-            <button type="submit" className="btn btn-primary" disabled={form.status === "Done"}>
-                {isEdit ? "Save Changes" : "Create Receipt"}
-            </button>
+          <button type="submit" className="btn btn-primary" disabled={form.status === "Done"}>
+            {isEdit ? "Save Changes" : "Create Receipt"}
+          </button>
         </div>
       </form>
     </div>

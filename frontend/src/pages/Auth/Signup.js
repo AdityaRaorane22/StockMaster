@@ -12,6 +12,13 @@ const Signup = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    if (!passwordRegex.test(password)) {
+      alert("Password must be at least 8 characters long and include 1 uppercase, 1 lowercase, 1 number, and 1 special character.");
+      return;
+    }
+
     try {
       const { data } = await axios.post('http://localhost:5001/api/auth/register', { name, email, password });
       localStorage.setItem('token', data.token);
@@ -26,27 +33,27 @@ const Signup = () => {
     <div className="auth-container">
       <div className="auth-left">
         <div style={{ textAlign: 'center', color: 'white', zIndex: 1 }}>
-            <motion.div 
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ duration: 0.5 }}
-            >
-                <FaCube size={64} style={{ marginBottom: '1.5rem' }} />
-                <h1 style={{ fontSize: '3rem', marginBottom: '1rem' }}>Join Us</h1>
-                <p style={{ fontSize: '1.25rem', opacity: 0.9 }}>Start managing your inventory like a pro.</p>
-            </motion.div>
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.5 }}
+          >
+            <FaCube size={64} style={{ marginBottom: '1.5rem' }} />
+            <h1 style={{ fontSize: '3rem', marginBottom: '1rem' }}>Join Us</h1>
+            <p style={{ fontSize: '1.25rem', opacity: 0.9 }}>Start managing your inventory like a pro.</p>
+          </motion.div>
         </div>
       </div>
       <div className="auth-right">
-        <motion.div 
-            className="auth-card"
-            initial={{ x: 20, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            transition={{ delay: 0.2 }}
+        <motion.div
+          className="auth-card"
+          initial={{ x: 20, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          transition={{ delay: 0.2 }}
         >
           <h2 style={{ marginBottom: '0.5rem', fontSize: '2rem' }}>Create Account</h2>
           <p style={{ color: 'var(--text-muted)', marginBottom: '2rem' }}>Get started with your free account today.</p>
-          
+
           <form onSubmit={handleSubmit}>
             <div style={{ marginBottom: '1.5rem' }}>
               <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500' }}>Full Name</label>
@@ -83,7 +90,7 @@ const Signup = () => {
             </div>
             <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '0.875rem' }}>Create Account</button>
           </form>
-          
+
           <p style={{ marginTop: '2rem', textAlign: 'center', fontSize: '0.875rem', color: 'var(--text-muted)' }}>
             Already have an account? <Link to="/login" style={{ color: 'var(--primary)', fontWeight: '600' }}>Sign in</Link>
           </p>

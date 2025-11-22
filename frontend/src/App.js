@@ -4,6 +4,8 @@ import Layout from "./components/Layout";
 // Auth
 import Login from "./pages/Auth/Login";
 import Signup from "./pages/Auth/Signup";
+import ForgotPassword from "./pages/Auth/ForgotPassword";
+import ResetPassword from "./pages/Auth/ResetPassword";
 
 // Dashboard
 import Dashboard from "./pages/Dashboard";
@@ -35,6 +37,8 @@ function App() {
         {/* Auth Routes */}
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/" element={<Navigate to="/login" />} />
 
         {/* Protected Routes */}
@@ -42,7 +46,7 @@ function App() {
           <Layout>
             <Routes>
               <Route path="/dashboard" element={<Dashboard />} />
-              
+
               {/* Stock Routes */}
               <Route path="/stock" element={<StockList />} />
               <Route path="/products" element={<ProductList />} />

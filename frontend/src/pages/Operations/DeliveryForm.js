@@ -22,11 +22,13 @@ function DeliveryForm() {
 
   const [warehouses, setWarehouses] = useState([]);
   const [products, setProducts] = useState([]);
+  const [stocks, setStocks] = useState([]); // Store stock levels
   const [reference, setReference] = useState("");
 
   useEffect(() => {
     axios.get(`${API}/warehouses`).then(res => setWarehouses(res.data));
     axios.get(`${API}/products`).then(res => setProducts(res.data));
+    fetchStocks(); // Fetch all stocks
 
     if (isEdit) {
       axios.get(`${API}/deliveries/${id}`).then(res => {
@@ -45,8 +47,38 @@ function DeliveryForm() {
           }))
         });
       });
+    } else {
+      // Auto-fill responsible person for new deliveries
+      const userInfo = localStorage.getItem("userInfo");
+      if (userInfo) {
+        try {
+          const user = JSON.parse(userInfo);
+          setForm(prev => ({ ...prev, responsiblePerson: user.name }));
+        } catch (e) {
+          console.error("Error parsing user info", e);
+        }
+      }
     }
   }, [id, isEdit]);
+
+  const fetchStocks = async () => {
+    try {
+      const res = await axios.get(`${API}/stocks`);
+      setStocks(res.data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const getStockQuantity = (productId, warehouseId) => {
+    if (!productId || !warehouseId) return 0;
+    // Find stock for this product in the selected warehouse's locations
+    const relevantStock = stocks.find(s =>
+      s.product?._id === productId &&
+      (s.location?.warehouse?._id === warehouseId || s.location?.warehouse === warehouseId)
+    );
+    return relevantStock ? relevantStock.quantity : 0;
+  };
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -83,11 +115,14 @@ function DeliveryForm() {
 
   const handleValidate = async () => {
     try {
-      await axios.post(`${API}/deliveries/${id}/validate`);
+      const res = await axios.post(`${API}/deliveries/${id}/validate`);
       // Refresh data
-      const res = await axios.get(`${API}/deliveries/${id}`);
       setForm({ ...form, status: res.data.status });
-      alert("Delivery Validated Successfully!");
+      if (res.data.status === "Waiting") {
+        alert("Warning: Stock unavailable. Delivery set to 'Waiting' status.");
+      } else {
+        alert("Delivery Validated Successfully!");
+      }
     } catch (err) {
       alert(err.response?.data?.error || "Validation failed");
     }
@@ -97,24 +132,24 @@ function DeliveryForm() {
     const steps = ["Draft", "Waiting", "Ready", "Done"];
     const currentIndex = steps.indexOf(status);
     return (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            {steps.map((step, index) => (
-                <React.Fragment key={step}>
-                    <div style={{ 
-                        padding: '0.25rem 0.75rem', 
-                        borderRadius: '999px', 
-                        fontSize: '0.75rem', 
-                        fontWeight: '600',
-                        background: index <= currentIndex ? 'var(--primary)' : 'var(--bg-surface)',
-                        color: index <= currentIndex ? 'white' : 'var(--text-muted)',
-                        border: index <= currentIndex ? 'none' : '1px solid var(--border)'
-                    }}>
-                        {step}
-                    </div>
-                    {index < steps.length - 1 && <FaArrowRight size={10} color="var(--text-muted)" />}
-                </React.Fragment>
-            ))}
-        </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        {steps.map((step, index) => (
+          <React.Fragment key={step}>
+            <div style={{
+              padding: '0.25rem 0.75rem',
+              borderRadius: '999px',
+              fontSize: '0.75rem',
+              fontWeight: '600',
+              background: index <= currentIndex ? 'var(--primary)' : 'var(--bg-surface)',
+              color: index <= currentIndex ? 'white' : 'var(--text-muted)',
+              border: index <= currentIndex ? 'none' : '1px solid var(--border)'
+            }}>
+              {step}
+            </div>
+            {index < steps.length - 1 && <FaArrowRight size={10} color="var(--text-muted)" />}
+          </React.Fragment>
+        ))}
+      </div>
     );
   };
 
@@ -122,21 +157,21 @@ function DeliveryForm() {
     <div>
       <div className="header">
         <div>
-            <h1>{isEdit ? reference : "New Delivery"}</h1>
-            <p style={{ color: 'var(--text-muted)' }}>Outgoing shipment to customer.</p>
+          <h1>{isEdit ? reference : "New Delivery"}</h1>
+          <p style={{ color: 'var(--text-muted)' }}>Outgoing shipment to customer.</p>
         </div>
         <div style={{ display: 'flex', gap: '1rem' }}>
-            {isEdit && form.status !== "Done" && (
-                <button className="btn btn-primary" onClick={handleValidate}>
-                    <FaCheck /> Validate
-                </button>
-            )}
-            <button className="btn btn-outline" onClick={() => window.print()}>
-                <FaPrint /> Print
+          {isEdit && form.status !== "Done" && (
+            <button className="btn btn-primary" onClick={handleValidate}>
+              <FaCheck /> Validate
             </button>
-            <button className="btn btn-outline" onClick={() => navigate("/operations/deliveries")}>
-                <FaTimes /> Cancel
-            </button>
+          )}
+          <button className="btn btn-outline" onClick={() => window.print()}>
+            <FaPrint /> Print
+          </button>
+          <button className="btn btn-outline" onClick={() => navigate("/operations/deliveries")}>
+            <FaTimes /> Cancel
+          </button>
         </div>
       </div>
 
@@ -146,105 +181,115 @@ function DeliveryForm() {
 
       <form onSubmit={handleSubmit}>
         <div className="card" style={{ marginBottom: '2rem' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
-                <div>
-                    <div style={{ marginBottom: '1rem' }}>
-                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500' }}>Deliver To</label>
-                        <input type="text" className="input" value="Customer" disabled style={{ background: 'var(--bg-surface)' }} />
-                    </div>
-                    <div style={{ marginBottom: '1rem' }}>
-                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500' }}>Contact (Customer)</label>
-                        <input type="text" name="contact" className="input" value={form.contact} onChange={handleChange} required placeholder="e.g. Furniture City" />
-                    </div>
-                    <div style={{ marginBottom: '1rem' }}>
-                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500' }}>Source Warehouse</label>
-                        <select name="from" className="input" value={form.from} onChange={handleChange} required>
-                            <option value="">Select Warehouse</option>
-                            {warehouses.map(wh => (
-                                <option key={wh._id} value={wh._id}>{wh.name}</option>
-                            ))}
-                        </select>
-                    </div>
-                </div>
-                <div>
-                    <div style={{ marginBottom: '1rem' }}>
-                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500' }}>Scheduled Date</label>
-                        <input type="date" name="scheduledDate" className="input" value={form.scheduledDate} onChange={handleChange} required />
-                    </div>
-                    <div style={{ marginBottom: '1rem' }}>
-                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500' }}>Delivery Address</label>
-                        <input type="text" name="deliveryAddress" className="input" value={form.deliveryAddress} onChange={handleChange} placeholder="e.g. 123 Main St" />
-                    </div>
-                    <div style={{ marginBottom: '1rem' }}>
-                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500' }}>Responsible Person</label>
-                        <input type="text" name="responsiblePerson" className="input" value={form.responsiblePerson} onChange={handleChange} />
-                    </div>
-                </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
+            <div>
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500' }}>Deliver To</label>
+                <input type="text" className="input" value="Customer" disabled style={{ background: 'var(--bg-surface)' }} />
+              </div>
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500' }}>Contact (Customer)</label>
+                <input type="text" name="contact" className="input" value={form.contact} onChange={handleChange} required placeholder="e.g. Furniture City" />
+              </div>
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500' }}>Source Warehouse</label>
+                <select name="from" className="input" value={form.from} onChange={handleChange} required>
+                  <option value="">Select Warehouse</option>
+                  {warehouses.map(wh => (
+                    <option key={wh._id} value={wh._id}>{wh.name}</option>
+                  ))}
+                </select>
+              </div>
             </div>
+            <div>
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500' }}>Scheduled Date</label>
+                <input type="date" name="scheduledDate" className="input" value={form.scheduledDate} onChange={handleChange} required />
+              </div>
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500' }}>Delivery Address</label>
+                <input type="text" name="deliveryAddress" className="input" value={form.deliveryAddress} onChange={handleChange} placeholder="e.g. 123 Main St" />
+              </div>
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500' }}>Responsible Person</label>
+                <input type="text" name="responsiblePerson" className="input" value={form.responsiblePerson} onChange={handleChange} />
+              </div>
+            </div>
+          </div>
         </div>
 
         <div className="card">
-            <h3 style={{ marginBottom: '1rem' }}>Products</h3>
-            <div className="table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Product</th>
-                            <th style={{ width: '150px' }}>Quantity</th>
-                            <th style={{ width: '100px', textAlign: 'right' }}>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {form.products.map((item, index) => (
-                            <tr key={index}>
-                                <td>
-                                    <select 
-                                        className="input" 
-                                        value={item.product} 
-                                        onChange={(e) => handleProductChange(index, "product", e.target.value)} 
-                                        required
-                                        disabled={form.status === "Done"}
-                                    >
-                                        <option value="">Select Product</option>
-                                        {products.map(p => (
-                                            <option key={p._id} value={p._id}>{p.name} ({p.sku})</option>
-                                        ))}
-                                    </select>
-                                </td>
-                                <td>
-                                    <input 
-                                        type="number" 
-                                        className="input" 
-                                        value={item.quantity} 
-                                        onChange={(e) => handleProductChange(index, "quantity", e.target.value)} 
-                                        required 
-                                        min="1"
-                                        disabled={form.status === "Done"}
-                                    />
-                                </td>
-                                <td style={{ textAlign: 'right' }}>
-                                    {form.status !== "Done" && (
-                                        <button type="button" className="btn btn-danger btn-sm" onClick={() => removeProduct(index)}>
-                                            <FaTrash />
-                                        </button>
-                                    )}
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
-            {form.status !== "Done" && (
-                <button type="button" className="btn btn-outline" onClick={addProduct} style={{ marginTop: '1rem' }}>
-                    <FaPlus /> Add Product
-                </button>
-            )}
+          <h3 style={{ marginBottom: '1rem' }}>Products</h3>
+          <div className="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Product</th>
+                  <th style={{ width: '150px' }}>Quantity</th>
+                  <th style={{ width: '100px', textAlign: 'right' }}>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {form.products.map((item, index) => {
+                  const availableStock = getStockQuantity(item.product, form.from);
+                  const isInsufficient = form.from && item.product && item.quantity > availableStock;
+
+                  return (
+                    <tr key={index} style={{ background: isInsufficient ? '#fee2e2' : 'transparent' }}>
+                      <td>
+                        <select
+                          className="input"
+                          value={item.product}
+                          onChange={(e) => handleProductChange(index, "product", e.target.value)}
+                          required
+                          disabled={form.status === "Done"}
+                        >
+                          <option value="">Select Product</option>
+                          {products.map(p => (
+                            <option key={p._id} value={p._id}>{p.name} ({p.sku})</option>
+                          ))}
+                        </select>
+                        {isInsufficient && (
+                          <div style={{ fontSize: '0.75rem', color: 'var(--danger)', marginTop: '4px' }}>
+                            Available: {availableStock} (Insufficient)
+                          </div>
+                        )}
+                      </td>
+                      <td>
+                        <input
+                          type="number"
+                          className="input"
+                          value={item.quantity}
+                          onChange={(e) => handleProductChange(index, "quantity", e.target.value)}
+                          required
+                          min="1"
+                          disabled={form.status === "Done"}
+                        />
+                      </td>
+                      <td style={{ textAlign: 'right' }}>
+                        {form.status !== "Done" && (
+                          <button type="button" className="btn btn-danger btn-sm" onClick={() => removeProduct(index)}>
+                            <FaTrash />
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+          {form.status !== "Done" && (
+            <button type="button" className="btn btn-outline" onClick={addProduct} style={{ marginTop: '1rem' }}>
+              <FaPlus /> Add Product
+            </button>
+          )}
         </div>
 
         <div style={{ marginTop: '2rem', display: 'flex', gap: '1rem' }}>
-            <button type="submit" className="btn btn-primary" disabled={form.status === "Done"}>
-                {isEdit ? "Save Changes" : "Create Delivery"}
-            </button>
+          <button type="submit" className="btn btn-primary" disabled={form.status === "Done"}>
+            {isEdit ? "Save Changes" : "Create Delivery"}
+          </button>
         </div>
       </form>
     </div>

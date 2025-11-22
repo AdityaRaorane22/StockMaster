@@ -6,15 +6,17 @@ const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
   role: { type: String, enum: ["admin", "manager", "staff"], default: "staff" },
-  avatar: { type: String }
+  avatar: { type: String },
+  otp: { type: String },
+  otpExpires: { type: Date }
 }, { timestamps: true });
 
-userSchema.pre("save", async function() {
+userSchema.pre("save", async function () {
   if (!this.isModified("password")) return;
   this.password = await bcrypt.hash(this.password, 10);
 });
 
-userSchema.methods.matchPassword = async function(enteredPassword) {
+userSchema.methods.matchPassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
 
