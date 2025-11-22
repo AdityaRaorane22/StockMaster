@@ -10,7 +10,8 @@ import {
   FaTruck,
   FaClipboardList,
   FaCube,
-  FaHistory
+  FaHistory,
+  FaUserCircle
 } from 'react-icons/fa';
 import { motion } from 'framer-motion';
 
@@ -32,6 +33,7 @@ const Layout = ({ children }) => {
     { path: '/operations/moves', label: 'Stock Ledger', icon: <FaHistory />, roles: ['Inventory Manager', 'Warehouse Staff'] },
     { path: '/settings/warehouse', label: 'Warehouses', icon: <FaWarehouse />, roles: ['Inventory Manager'] },
     { path: '/settings/location', label: 'Locations', icon: <FaCog />, roles: ['Inventory Manager'] },
+    { path: '/profile', label: 'Profile', icon: <FaUserCircle />, roles: ['Inventory Manager', 'Warehouse Staff'] },
   ];
 
   const menuItems = allMenuItems.filter(item => item.roles.includes(role));

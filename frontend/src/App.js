@@ -19,7 +19,9 @@ import ProductForm from "./pages/Stock/ProductForm";
 import WarehouseList from "./pages/Settings/WarehouseList";
 import WarehouseForm from "./pages/Settings/WarehouseForm";
 import LocationList from "./pages/Settings/LocationList";
+
 import LocationForm from "./pages/Settings/LocationForm";
+import Profile from "./pages/Settings/Profile";
 
 // Operations
 import ReceiptList from "./pages/Operations/ReceiptList";
@@ -62,7 +64,9 @@ function App() {
               <Route path="/settings/warehouse/edit/:id" element={<WarehouseForm />} />
               <Route path="/settings/location" element={<LocationList />} />
               <Route path="/settings/location/new" element={<LocationForm />} />
+
               <Route path="/settings/location/edit/:id" element={<LocationForm />} />
+              <Route path="/profile" element={<Profile />} />
 
               {/* Operations - Receipts */}
               <Route path="/operations/receipts" element={<ReceiptList />} />

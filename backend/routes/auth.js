@@ -3,6 +3,7 @@ const router = express.Router();
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 const nodemailer = require("nodemailer");
+const { protect } = require("../middleware/authMiddleware");
 
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET || "secret", { expiresIn: "30d" });
@@ -121,6 +122,26 @@ router.post("/reset-password", async (req, res) => {
     await user.save();
 
     res.json({ message: "Password reset successful" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get User Profile
+router.get("/profile", protect, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (user) {
+      res.json({
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        avatar: user.avatar
+      });
+    } else {
+      res.status(404).json({ message: "User not found" });
+    }
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
